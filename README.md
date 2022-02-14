@@ -19,4 +19,12 @@ Now we are creating a SnakeMake version and will create this more streamlined Gi
 - The databases are used for (meta)transcriptomics, (meta)proteomics, metabolomics, metagenomics, and for novel binning and MAG quality control software I've created. 
 This way many types of data can be combined into a secondary analysis, with taxonomy and functions being directly linked. It also covers both the protein and the non-coding fraction of sequencing. 
 
-Start [here](https://github.com/TealFurnholm/UMRAD/wiki/Step-1.-Download)
+## How to Use
+There are several primary and secondary microbiome analysis pipelines on my main GitHub page that use these databases:
+* RNAseq/Metatranscriptome Analysis [here](https://github.com/TealFurnholm/Strain-Level_Metatranscriptome_Analysis)
+* Metagenome Primary Analysis [here](https://github.com/TealFurnholm/Strain-Level_Metagenome_Analysis)
+* Metabolomics Analysis - TBD; for now you can directly link the metabolomics output to compounds->reactions->proteins/oranisms using the Functional and Protein databases
+* Strain-level Metagenome Binning [here](https://github.com/TealFurnholm/Community-Based-Metagenome-Binning)
+* Secondary Functional Analysis and Visualization [here](https://github.com/TealFurnholm/Meta-omics_Functional_Analysis)    
+    
+# Start [here](https://github.com/TealFurnholm/UMRAD/wiki/Step-1.-Download)
