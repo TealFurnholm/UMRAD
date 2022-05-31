@@ -1,7 +1,6 @@
 use warnings;
 
-$bioc_dir='/geomicro/data2/kiledal/UMRAD/Universal_Biological_Compounds_Database/BIOCYC_NF/*';
-#$bioc_dir='/geomicro/data2/tealfurn/URDB/UNIPROT/FUNCTIONS/BIOCYC/*';
+$bioc_dir='./*'; #put the biocyc directory path here
 
 $x='';
 $x = qx{ls -d $bioc_dir};
