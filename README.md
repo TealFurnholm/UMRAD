@@ -5,14 +5,12 @@ Universal Multi-omics Reference and Alignment Database
 This repository involves a series of pipelines that create a Universal Reference to unite and analyze multi-omics data.
 Currently the different databases are separated - to keep things simple for me when I made them.
     <br>1. Universal Taxonomy Database: [found here](https://github.com/TealFurnholm/Universal-Taxonomy-Database)
-    <br>2. Universal Compounds Database: [found here](https://github.com/TealFurnholm/Universal_Biological_Compounds_Database)
-    <br>3. Universal Reactions Database: [found here](https://github.com/TealFurnholm/Universal_Biological_Reactions_Database)
+    <br>2. + 3. Universal Compounds Database and Universal Reactions Database: [found here](https://github.com/TealFurnholm/Universal_Biological_Compounds_Database)
     <br>4. Universal Protein Alignment Database: [found here](https://github.com/TealFurnholm/Universal_Microbiomics_Alignment_Database)
     <br>5. Universal ncRNA Alignment Database: [found here](https://github.com/TealFurnholm/Fix_RNACentral_Taxonomy)
 <p>
-Now we are creating a SnakeMake version and will create this more streamlined GitHub version.
 
-## How Universal?
+## Why Universal?
 - These databases span all kingdoms of life. 
 - The databases allow the simultaneous identification of microbial community phylogeny and functions. 
 - All the biological molecules/compounds and their data are linked to their enzymes and transporters to map the flow of metabolites in microbe-microbe or microbe-host interactions. 
@@ -27,4 +25,4 @@ There are several primary and secondary microbiome analysis pipelines on my main
 * Strain-level Metagenome Binning [here](https://github.com/TealFurnholm/Community-Based-Metagenome-Binning)
 * Secondary Functional Analysis and Visualization [here](https://github.com/TealFurnholm/Meta-omics_Functional_Analysis)    
     
-# Start [here](https://github.com/TealFurnholm/UMRAD/wiki/Step-1.-Download)
+## Start: [here](https://github.com/TealFurnholm/Universal-Taxonomy-Database)
