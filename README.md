@@ -5,7 +5,7 @@ Universal Multi-omics Reference and Alignment Database
 This repository involves a series of pipelines that create a Universal Reference to unite and analyze multi-omics data.
 Currently the different databases are separated - to keep things simple for me when I made them.
     <br>1. Universal Taxonomy Database: [found here](https://github.com/TealFurnholm/Universal-Taxonomy-Database)
-    <br>2. + 3. Universal Compounds Database and Universal Reactions Database: [found here](https://github.com/TealFurnholm/Universal_Biological_Compounds_Database)
+    <br>2. Universal Compounds Database and + 3. Universal Reactions Database: [found here](https://github.com/TealFurnholm/Universal_Biological_Compounds_Database)
     <br>4. Universal Protein Alignment Database: [found here](https://github.com/TealFurnholm/Universal_Microbiomics_Alignment_Database)
     <br>5. Universal ncRNA Alignment Database: [found here](https://github.com/TealFurnholm/Fix_RNACentral_Taxonomy)
 <p>
