@@ -7,7 +7,7 @@ use Sort::Naturally 'nsort';
 #OPEN FILES - CHECK
 ##############################################################
 $inidm  = 'idmapping.dat.gz';		open(INMAP, "gunzip -c $inidm |")||die "1 no $inidm  - please place into this folder and restart\n"; 
-$inup  	= 'uniprot-all.tab.gz';		open(INUP,   $inup  )||die "2 no $inup   - please place into this folder and restart\n"; 
+$inup  	= 'uniprot-all.tab.gz';		open(INUP, "gunzip -c $inup |")||die "2 no $inup   - please place into this folder and restart\n"; 
 $inkegn	= 'KEGG_GENES_RXN.txt';		open(INKEGN, $inkegn)||die "3 no $inkegn - please place into this folder and restart\n";
 $inbmon	= 'BIOCYC_MONO_RXNS.txt';	open(INBMON, $inbmon)||die "4 no $inbmon - please place into this folder and restart\n"; 
 $inrhrx	= 'RHEA_RXN_DB.txt';		open(INRHRX, $inrhrx)||die "5 no $inrhrx - please place into this folder and restart\n"; 
@@ -15,10 +15,10 @@ $inkgrx = 'KEGG_RXN_DB.txt';		open(INKGRX, $inkgrx)||die "6 no $inkgrx - please 
 $inbcrx	= 'BIOCYC_RXN_DB.txt';		open(INBCRX, $inbcrx)||die "7 no $inbcrx - please place into this folder and restart\n"; 
 $intcdb	= 'UR100vsTCDB.m8';		open(INTCDB, $intcdb )||die "8 no $intcdb - please place into this folder and restart\n"; 
 $intrch	= 'getSubstrates.py';		open(INTRCH, $intrch )||die "9 no $intrch - please place into this folder and restart\n"; 
-$intax 	= 'TAXONOMY_DB.txt'; 		open(INTAX,  $intax  )||die "10 no $intax  - please place into this folder and restart\n"; 
-open(INUP, "gunzip -c $inup |")||die;
+#$intax	= 'TAXONOMY_DB.txt'; 		open(INTAX,  $intax  )||die "10 no $intax  - please place into this folder and restart\n"; 
+#output
 open(OUTPINT, ">", "OUT_UNIPROT.txt")||die;
-
+open(OUTREF, ">", "OUT_UNIREF.txt")||die;
 
 
 ##############################################################
@@ -80,14 +80,14 @@ while(<INTCDB>){
 	}	}
 
 	if($on%10000==0){$time=localtime; print "on $on tcdb $tcdb ur100 $ur100 sco $sco hascpd $HASCPD{$ur100}\n";} $on++;
-	if($on>100000){last;} #!!!!
+	#if($on>100000){last;} #!!!!
 }
 undef(%HASCPD);
 
 
-#!!!! may need to unhash this + use it
-#Robert has some concerns about the NCA, 
-#maybe just leave only tids, create LCA on the fly later?
+#!!!! may need to unhash this + use it, currently not
+#Robert has some concerns about the NCA/LCAs
+#for now just leave only tids, create LCA on the fly later?
 #$time=localtime;
 #print "INPUT TAXONOMY $time\n";
 #while(<INTAX>){
@@ -114,19 +114,21 @@ while(<INMAP>){
         $_=uc($_);
         $_=~s/[\r\n]+//;
         (my $prot, my $type, my $id)=split("\t",$_);
-           if($type eq "UNIREF100"){$UPID_UR100{$prot}=$id;}
-        elsif($type eq "UNIREF90"){  $UPID_UR90{$prot}=$id;}
-	#elsif($type eq "NCBI.TAXID"){$UPID_TAXID{$prot}=$id;}
+           if($type eq "UNIREF100"){ $ur100=$id; $UPID_UR100{$prot}=$ur100;
+		if(exists($UPID_UR90{$prot})){ $ur90 =$UPID_UR90{$prot};  $UR100_UR90{$ur100}=$ur90;}}
+        elsif($type eq "UNIREF90"){  $ur90=$id;  $UPID_UR90{$prot} =$ur90;
+		if(exists($UPID_UR100{$prot})){$ur100=$UPID_UR100{$prot}; $UR100_UR90{$ur100}=$ur90;}}
 	else{next;}
         if($on%10000==0){ $time=localtime;
                 $tpo = keys %UPID_UR100;
                 $tpn = keys %UPID_UR90;
                 print "on $on time $time prot $prot upid_ur100 $tpo upid_90 $tpn id $id\n";
         }
-	if($on>100000){last;}#!!!!
+	#if($on>100000){last;}#!!!!
 $on++;}
 ##############################################################
 ##############################################################
+
 
 
 ##############################################################
@@ -160,11 +162,13 @@ while(<INURFA>){
         $odd=join("|",@AA);
         if($odd=~/[A-Z]/){ $PROT_NAME{$ur100}.= ";".$odd; }
         if($on%10000==0){$time=localtime; print "on $on time $time ur100 $ur100 odd $odd len $len name $PROT_NAME{$ur100}\n";} $on++;
-	if($on>100000){last;}#!!!!
+	#if($on>100000){last;}#!!!!
 }
 $/="\n";
 ##############################################################
 ##############################################################
+
+
 
 
 ##############################################################
@@ -181,7 +185,7 @@ while(<INKEGN>){
         if($on%1000==0){$time=localtime;
                 print "on $on time $time kgene $kgene rxn $rxn cnt $KGEN_KRXN{$kgene}{$rxn}\n";
         } $on++;
-	if($on>100000){last;}#!!!!
+	#if($on>100000){last;}#!!!!
 }
 
 #LOAD BIOCYC MONOMERS
@@ -196,7 +200,7 @@ while(<INBMON>){
         if($on%1000==0){$time=localtime;
                 print "on $on time $time mono $mono rxn $rxn cnt $MONO_BRXN{$mono}{$rxn}\n";
         } $on++;
-	if($on>100000){last;}#!!!!
+	#if($on>100000){last;}#!!!!
 }
 ##############################################################
 ##############################################################
@@ -258,13 +262,13 @@ while(<INBCRX>){
 
 
 ##############################################################
-##### 		INPUT UNIPROT DOWNLOAD			######
+##### 		INPUT / OUTPUT UNIPROT DOWNLOAD		######
 ##############################################################
 $on=0;
 $time = localtime;
 print "INPUT UNIPROT $time\n";
-print OUTPINT "UP-ID\tUR100\tUR90\tName\tLength\tTaxonId\t";
-print OUTPINT "SigPep\tTMS\tDNA\tMetal\tLoc\t";
+print OUTPINT "UP-ID\tUR100\tUR90\tName\tLength\t";
+print OUTPINT "SigPep\tTMS\tDNA\tTaxonId\tMetal\tLoc\t";
 print OUTPINT "TCDB\tCOG\tPfam\tTigr\tGene_Ont\tInterPro\tECs\t";
 print OUTPINT "kegg\trhea\tbiocyc\n";
 while(<INUP>){
@@ -329,8 +333,10 @@ while(<INUP>){
 
 	$dna=''; 		if($stuff[17]=~/(\d+\.\.\d+).*?NOTE\=\"([^\"]+)/){ $cln=CleanNames($2); 	$dna = "DNA:".$1."|".$cln;}
 
-	$met=''; @METS=();	if($stuff[18]=~/NOTE/){	    @METS = ($stuff[18]=~/NOTE\W+([\w\s]+).*?[\"\;]+/g ); $met = join(";", @METS);}
-
+	$met=''; @METS=();	if($stuff[18]=~/NOTE/){	    @METS = ($stuff[18]=~/NOTE\W+([\w\s]+).*?[\"\;]+/g ); 
+					@GME=(); for my $i (0..$#METS){ $METS[$i] = CleanNames($METS[$i]);
+						if($METS[$i]=~/\w/){push(@GME, $METS[$i]);}}			$met = join(";", @GME);}
+						
 	$loc=''; @LOCS=();	if($stuff[19]=~/[\.\:][^\{\d\.\:\;\]]+\{/){ @GLO=();
 					@LOCS = ($stuff[19]=~/[\.\:][^\{\d\.\:\;\]]+\{/g); 
 					for my $i (0..$#LOCS){ $LOCS[$i] = CleanNames($LOCS[$i]); 
@@ -376,14 +382,14 @@ while(<INUP>){
 	$FIN[1]=$ur90;		$UR100_INFO{$ur100}{1}=$ur90;
 	$FIN[2]=$name;		$UR100_INFO{$ur100}{2}=$PROT_NAME{$ur100};
 	$FIN[3]=$plen;		$UR100_INFO{$ur100}{3}=$PROT_LEN{$ur100};
-	$FIN[4]=$tid;		$UR100_INFO{$ur100}{4}{$tid}=1;
 
 	#coordinates or ambig
-	$FIN[5]=$sig;		for my $i (5..7){ $UR100_INFO{$ur100}{$i}=$FIN[$i]; }		
-	$FIN[6]=$tms;
-	$FIN[7]=$dna;
-
+	$FIN[4]=$sig;
+	$FIN[5]=$tms;
+	$FIN[6]=$dna;		for my $i (4..6){ $UR100_INFO{$ur100}{$i}=$FIN[$i]; }
+	
 	#basic Function IDs
+	$FIN[7]=$tid;
 	$FIN[8]=$met;
 	$FIN[9]=$loc;
 	$FIN[10]=$tcp;
@@ -400,54 +406,56 @@ while(<INUP>){
 	$FIN[19]=$bioc;
 
 	#get ur100/ur90 prot-func counts
-	for my $i (8..19){
+	for my $i (7..19){
 		@IDS=();
 		@IDS=split(";", $FIN[$i]);
-		%seen=();
+		%seen=(); @GIDS=();
 		@IDS = grep{ !$seen{$_}++ } @IDS;
-		foreach my $id (@IDS){ $UR100_INFO{$ur100}{$i}{$id}++; $UR90_INFO{$ur90}{$i}{$id}++;}
-		@IDS = nsort(@IDS);
+		foreach my $id (@IDS){ if($id!~/\w/){next;} push(@GIDS,$id); $UR100_INFO{$ur100}{$i}{$id}++; $UR90_INFO{$ur90}{$i}{$id}++;}
+		@IDS = nsort(@GIDS);
 		$FIN[$i]=join(";", @IDS);
 	}
 	
 	#output cleaned uniprot
 	$out=join("\t",@FIN);
 	print OUTPINT "$upid\t$out\n";
-
-	if($on%1000==0){$time=localtime; print "on $on time $time out upids\n";} $on++;
+	if($on%1000000==0){$time=localtime; print "on $on time $time out upids, skipped $skipee\n"; } $on++;
 }
 close(OUTPINT);
 print "final on $on uniprots\n";
 
 
 #COMPILE AND OUTPUT UNIREF
-foreach my $ur100 (sort(keys %UR100_INFO)){
+print "OUTPUT UNIREF100\n";
+#go thru all UniRef100s
+$on=0;
+foreach my $ur100 (keys %PROT_LEN){
 	@OUT=();
 	$OUT[0]=$ur100;
-	$cnt = $UR100_INFO{$ur100}{0};
-	print "$ur100 cnt $cnt\n";
+	$ur90=$UR100_UR90{$ur100};
+	$OUT[1]=$ur90;
+	$OUT[2]=$PROT_NAME{$ur100};
+	$OUT[3]=$PROT_LEN{$ur100};
 
-	for my $i (1..3,5..7){ $OUT[$i] = $UR100_INFO{$ur100}{$i};}
-	
-	for my $i (4,8..19){
+	for my $i (4..6){ $OUT[$i] = $UR100_INFO{$ur100}{$i};}
+	for my $i (7..19){
 		@IDS=();
-		foreach my $id (keys %{$UR100_INFO{$ur100}{$i}}){push(@IDS,$id);} 
-		@IDS = nsort(@IDS);
+		foreach my $id (keys %{$UR100_INFO{$ur100}{$i}}){if($id=~/\w/){push(@IDS,$id);}} 
 
 		#use UR90 if no UR100 for functions
-		if($IDS[0]!~/\w/ && $i >= 8){
-			$ur90=$UR100_INFO{$ur100}{1};
-			@IDS=(); 
-			foreach my $id (keys %{$UR90_INFO{$ur90}{$i}}){push(@IDS,$id); print "$ur100 i $i id $id\n"; } 
-			@IDS = nsort(@IDS)
+		if($IDS[0]!~/\w/ && $i >= 8 && $ur90 =~ /UNIREF90/){
+			@IDS=();  
+			foreach my $id (sort{$UR90_INFO{$ur90}{$i}{$b}<=>$UR90_INFO{$ur90}{$i}{$a}} keys %{$UR90_INFO{$ur90}{$i}}){
+				if($id=~/\w/){ push(@IDS,$id);}} 
 		}
+		@IDS = nsort(@IDS);
 		$ids=join(";",@IDS);
 		if($ids !~/\w/){$ids='';}
 		$OUT[$i]=$ids;
 	}
 	$out=join("\t", @OUT);
-	#print OUTREF "$out\n";
-	print "out is $out\n";	
+	print OUTREF "$out\n";
+	if($on%1000000==0){$time=localtime; print "on $on time $time ur100 $ur100 name $OUT[2]\n";} $on++;
 }
 
 
