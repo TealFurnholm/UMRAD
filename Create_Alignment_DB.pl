@@ -1,7 +1,6 @@
 #use warnings;
 use Sort::Naturally 'nsort';
 
-#die;
 
 ##############################################################
 #OPEN FILES - CHECK
@@ -15,10 +14,12 @@ $inkgrx = 'KEGG_RXN_DB.txt';		open(INKGRX, $inkgrx)||die "6 no $inkgrx - please 
 $inbcrx	= 'BIOCYC_RXN_DB.txt';		open(INBCRX, $inbcrx)||die "7 no $inbcrx - please place into this folder and restart\n"; 
 $intcdb	= 'UR100vsTCDB.m8';		open(INTCDB, $intcdb )||die "8 no $intcdb - please place into this folder and restart\n"; 
 $intrch	= 'getSubstrates.py';		open(INTRCH, $intrch )||die "9 no $intrch - please place into this folder and restart\n"; 
+$infn	= 'Function_Names.txt';		open(INFN,   $infn)   ||die "10 no $infn - please place into this folder and restart\n";
 #$intax	= 'TAXONOMY_DB.txt'; 		open(INTAX,  $intax  )||die "10 no $intax  - please place into this folder and restart\n"; 
+
 #output
-open(OUTPINT, ">", "OUT_UNIPROT.txt")||die;
-open(OUTREF, ">", "OUT_UNIREF.txt")||die;
+#open(OUTPINT, ">", "OUT_UNIPROT.txt")||die;
+#open(OUTREF, ">", "OUT_UNIREF.txt")||die;
 
 
 ##############################################################
@@ -28,6 +29,19 @@ open(OUTREF, ">", "OUT_UNIREF.txt")||die;
 
 ##############################################################
 ##############################################################
+#GET FUNCTION NAMES
+print "input $infn\n";
+while(<INFN>){
+	if($_ !~ /\w/){next;}
+	$_=uc($_);
+	$_=~s/[\r\n]+//;
+	(my $id, my $name)=split("\t",$_,-1);
+	$id=~s/\s//g;
+	$FUNC_NAMES{$id}=$name;
+	print "id $id name $name\n";
+}
+close(INFN);
+
 #GET TCDB SUBSTRATES
 # - right now used to pick best TCDB
 # - previous used as left/right cpds - compile from RXN_DB chebi
@@ -79,10 +93,11 @@ while(<INTCDB>){
 			else{}
 	}	}
 
-	if($on%10000==0){$time=localtime; print "on $on tcdb $tcdb ur100 $ur100 sco $sco hascpd $HASCPD{$ur100}\n";} $on++;
+	if($on%1000000==0){$time=localtime; print "on $on tcdb $tcdb ur100 $ur100 sco $sco hascpd $HASCPD{$ur100}\n";} $on++;
 	#if($on>100000){last;} #!!!!
 }
 undef(%HASCPD);
+undef(%UR100_TCDB_SCO);
 
 
 #!!!! may need to unhash this + use it, currently not
@@ -119,10 +134,10 @@ while(<INMAP>){
         elsif($type eq "UNIREF90"){  $ur90=$id;  $UPID_UR90{$prot} =$ur90;
 		if(exists($UPID_UR100{$prot})){$ur100=$UPID_UR100{$prot}; $UR100_UR90{$ur100}=$ur90;}}
 	else{next;}
-        if($on%10000==0){ $time=localtime;
+        if($on%1000000==0){ $time=localtime;
                 $tpo = keys %UPID_UR100;
                 $tpn = keys %UPID_UR90;
-                print "on $on time $time prot $prot upid_ur100 $tpo upid_90 $tpn id $id\n";
+                print "on $on time $time prot $prot upid_ur100 $tpo upid_90 $tpn id $id ur100 $ur100 ur90 $UR100_UR90{$ur100}\n";
         }
 	#if($on>100000){last;}#!!!!
 $on++;}
@@ -143,9 +158,11 @@ while(<INURFA>){
         $_=uc($_);
         @stuff=split("\n",$_);
         $header = shift(@stuff);
-	$header =~ /(UNIREF100\_\S+)\s+(.*?)\s+N\=\d/;
+	$header =~ /(UNIREF100\_\S+)\s+(.*?)\s+N\=\d.*TAXID\=(\d+)/;
         $ur100=$1;
 	$name = CleanNames($2);
+	$tid = $3;
+	$UR100_INFO{$ur100}{7}{$tid}++;
         $seq = join("",@stuff);
         $seq =~ s/[^A-Z]//g;
         $len = length($seq);
@@ -161,7 +178,7 @@ while(<INURFA>){
         }
         $odd=join("|",@AA);
         if($odd=~/[A-Z]/){ $PROT_NAME{$ur100}.= ";".$odd; }
-        if($on%10000==0){$time=localtime; print "on $on time $time ur100 $ur100 odd $odd len $len name $PROT_NAME{$ur100}\n";} $on++;
+        if($on%1000000==0){$time=localtime; print "on $on time $time ur100 $ur100 odd $odd len $len tid $tid name $PROT_NAME{$ur100}\n";} $on++;
 	#if($on>100000){last;}#!!!!
 }
 $/="\n";
@@ -182,7 +199,7 @@ while(<INKEGN>){
         $_=~s/[\r\n]+//;
         (my $kgene, my $rxn)=split("\t",$_);
 	$KGEN_KRXN{$kgene}{$rxn}++;
-        if($on%1000==0){$time=localtime;
+        if($on%1000000==0){$time=localtime;
                 print "on $on time $time kgene $kgene rxn $rxn cnt $KGEN_KRXN{$kgene}{$rxn}\n";
         } $on++;
 	#if($on>100000){last;}#!!!!
@@ -197,7 +214,7 @@ while(<INBMON>){
         $_=~s/[\r\n]+//;
         (my $mono, my $rxn)=split("\t",$_);
 	$MONO_BRXN{$mono}{$rxn}++;
-        if($on%1000==0){$time=localtime;
+        if($on%1000000==0){$time=localtime;
                 print "on $on time $time mono $mono rxn $rxn cnt $MONO_BRXN{$mono}{$rxn}\n";
         } $on++;
 	#if($on>100000){last;}#!!!!
@@ -224,7 +241,7 @@ while(<INRHRX>){
 	$ec	=$stuff[25];
 	if($ec=~/[\d\.]+/){ $EC_RRXN{$ec}{$rxn}++; }
 	if($upid=~/\w/){    $UPID_RRXN{$upid}{$rxn}++; }
-	if($on%10000==0){ print "rrxn $rxn ec $ec upid $upid\n"; } $on++;
+	if($on%1000000==0){ print "rrxn $rxn ec $ec upid $upid\n"; } $on++;
 }
 #KEGG
 $time=localtime; 
@@ -239,7 +256,7 @@ while(<INKGRX>){
 	$ec	=$stuff[25];
 	if($ec=~/[\d\.]+/){ $EC_KRXN{$ec}{$rxn}++; }
 	if($upid=~/\w/){    $UPID_KRXN{$upid}{$rxn}++; }
-	if($on%10000==0){ print "krxn $rxn ec $ec upid $upid\n"; } $on++;
+	if($on%1000000==0){ print "krxn $rxn ec $ec upid $upid\n"; } $on++;
 }
 #BIOCYC
 $time=localtime; 
@@ -254,7 +271,7 @@ while(<INBCRX>){
 	$ec	=$stuff[25];
 	if($ec=~/[\d\.]+/){ $EC_BRXN{$ec}{$rxn}++; }
 	if($upid=~/\w/){    $UPID_BRXN{$upid}{$rxn}++; }
-	if($on%10000==0){ print "bioc $rxn ec $ec upid $upid\n"; } $on++;
+	if($on%1000000==0){ print "bioc $rxn ec $ec upid $upid\n"; } $on++;
 }
 ##############################################################
 ##############################################################
@@ -387,9 +404,9 @@ while(<INUP>){
 	$FIN[4]=$sig;
 	$FIN[5]=$tms;
 	$FIN[6]=$dna;		for my $i (4..6){ $UR100_INFO{$ur100}{$i}=$FIN[$i]; }
+	$FIN[7]=$tid;		if($tid=~/^\d+$/){$UR100_INFO{$ur100}{7}{$tid}++;}
 	
 	#basic Function IDs
-	$FIN[7]=$tid;
 	$FIN[8]=$met;
 	$FIN[9]=$loc;
 	$FIN[10]=$tcp;
@@ -406,7 +423,7 @@ while(<INUP>){
 	$FIN[19]=$bioc;
 
 	#get ur100/ur90 prot-func counts
-	for my $i (7..19){
+	for my $i (8..19){
 		@IDS=();
 		@IDS=split(";", $FIN[$i]);
 		%seen=(); @GIDS=();
@@ -428,6 +445,10 @@ print "final on $on uniprots\n";
 #COMPILE AND OUTPUT UNIREF
 print "OUTPUT UNIREF100\n";
 #go thru all UniRef100s
+print OUTREF "UR100\tUR90\tName\tLength\t";
+print OUTREF "SigPep\tTMS\tDNA\tTaxonId\tMetal\tLoc\t";
+print OUTREF "TCDB\tCOG\tPfam\tTigr\tGene_Ont\tInterPro\tECs\t";
+print OUTREF "kegg\trhea\tbiocyc\n";
 $on=0;
 foreach my $ur100 (keys %PROT_LEN){
 	@OUT=();
@@ -435,12 +456,15 @@ foreach my $ur100 (keys %PROT_LEN){
 	$ur90=$UR100_UR90{$ur100};
 	$OUT[1]=$ur90;
 	$OUT[2]=$PROT_NAME{$ur100};
+		if($PROT_NAME{$ur100}=~/(HYPOTHETICAL|UNCHARACTERIZED|PUTATIVE|UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)/){
+		if($FUNC_NAMES{$id}!~/(HYPOTHETICAL|UNCHARACTERIZED|PUTATIVE|UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)/){
+		if($FUNC_NAMES{$id}=~/\w/ && $OUT[2]!~/\;.*\;.*\;.*\;/){ $OUT[2]=$FUNC_NAMES{$id}.";".$OUT[2]; }}}
 	$OUT[3]=$PROT_LEN{$ur100};
 
 	for my $i (4..6){ $OUT[$i] = $UR100_INFO{$ur100}{$i};}
 	for my $i (7..19){
 		@IDS=();
-		foreach my $id (keys %{$UR100_INFO{$ur100}{$i}}){if($id=~/\w/){push(@IDS,$id);}} 
+		foreach my $id (keys %{$UR100_INFO{$ur100}{$i}}){if($id=~/\w/){push(@IDS,$id);}}
 
 		#use UR90 if no UR100 for functions
 		if($IDS[0]!~/\w/ && $i >= 8 && $ur90 =~ /UNIREF90/){
@@ -463,9 +487,9 @@ foreach my $ur100 (keys %PROT_LEN){
 
 
 ### SUBROUTINES ###
-@GREEKS = ("α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","ς","σ","τ","υ","φ","χ","ψ","ω");
-@GREEKL = ("ALPHA","BETA","GAMMA","DELTA","EPSILON","ZETA","ETA","THETA","IOTA","KAPPA","LAMBDA","MU","NU","XI","OMICRON","PI","RHO","SIGMA","SIGMA","TAU","UPSILON","PHI","CHI","PSI","OMEGA");
 sub CleanNames{
+	@GREEKS = ("α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","ς","σ","τ","υ","φ","χ","ψ","ω");
+	@GREEKL = ("ALPHA","BETA","GAMMA","DELTA","EPSILON","ZETA","ETA","THETA","IOTA","KAPPA","LAMBDA","MU","NU","XI","OMICRON","PI","RHO","SIGMA","SIGMA","TAU","UPSILON","PHI","CHI","PSI","OMEGA");
         $nameX = $_[0];
         #remove junk punctuation/standardize
         $sta=0; $end=1;
@@ -490,11 +514,11 @@ sub CleanNames{
 
                 #clear out junk descriptors
                 $nameX =~ s/^(LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)//g;
-                $nameX =~ s/^(UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)//g;
+                $nameX =~ s/^(HYPOTHETICAL|UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)//g;
                 $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)[\b\_]/\_/g;
-                $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)[\b\_]/\_/g;
+                $nameX =~ s/[\b\_](HYPOTHETICAL|UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)[\b\_]/\_/g;
                 $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)$//g;
-                $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)$//g;
+                $nameX =~ s/[\b\_](HYPOTHETICAL|UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)$//g;
                 $end=$nameX;
         }
         return($nameX);
