@@ -56,10 +56,6 @@ open(OUTKGR, ">", "KEGG_RXN_DB.txt")||die;
 ######################   	LOAD UNIVERSAL INFO	 #########################
 ##################################################################################
 
-#elements sorted long to short to remove in correct order
-#@ELEMENTS = ("AC","AG","AL","AM","AR","AS","AT","AU","TM","BA","BE","BH","BI","BK","BR","TS","CA","CD","CE","CF","CL","CM","CN","CO","CR","CS","CU","DB","DS","DY","ER","ES","EU","XE","FE","FL","FM","FR","GA","GD","GE","YB","HE","HF","HG","HO","HS","ZN","IN","IR","ZR","KR","LA","LI","LR","LU","LV","MC","MD","MG","MN","MO","MT","NA","NB","ND","NE","NH","NI","NO","NP","OG","OS","PA","PB","PD","PM","PO","PR","PT","PU","RA","RB","RE","RF","RG","RH","RN","RU","SB","SC","SE","SG","SI","SM","SN","SR","TA","TB","TC","TE","TH","TI","TL","B","C","F","H","I","K","U","V","W","P","Y","N","S","O");
-@GREEKS = ("α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","ς","σ","τ","υ","φ","χ","ψ","ω");
-@GREEKL = ("ALPHA","BETA","GAMMA","DELTA","EPSILON","ZETA","ETA","THETA","IOTA","KAPPA","LAMBDA","MU","NU","XI","OMICRON","PI","RHO","SIGMA","SIGMA","TAU","UPSILON","PHI","CHI","PSI","OMEGA");
 
 #GET TCDB - CHEBI DATA
 $time=localtime;
@@ -155,9 +151,9 @@ foreach my $x (@KG_CPD){
 	@lines=split("\n",$cpd_info);
 	$names=uc($names);
 	@names=split(";",$names);
-	foreach my $name (@names){ $name=CleanName($name); 	 $CMPD_NAME{$cpd}{$name}="KG"; } 
+	foreach my $name (@names){ $name=CleanNames($name); 	 $CMPD_NAME{$cpd}{$name}="KG"; } 
 	foreach my $i (@lines){
-		if($i=~/^FORMULA\s+(\S+)\;*/){	 $form=$1; 	 $CMPD_FORM{$cpd}=CleanName($form);}
+		if($i=~/^FORMULA\s+(\S+)\;*/){	 $form=$1; 	 $CMPD_FORM{$cpd}=CleanNames($form);}
 		if($i=~/^EXACT_MASS\s+(\S+)\;*/){$mass=$1; 	 $CMPD_MASS{$cpd}=$mass;}
 		if($i=~/^\s+PUBCHEM\:\s+(\d+)/){ $alt="CID:".$1; $CMPD_ALTS{$cpd}{$alt}="KG"; }
 		if($i=~/^\s+CHEBI\:\s+(\d+)/){ $alt="CHEBI:".$1; $CMPD_ALTS{$cpd}{$alt}="KG"; }
@@ -173,7 +169,7 @@ foreach my $x (@KG_CPD){
 #OUTPUT KEGG CPDS
 $time=localtime;
 print "OUTPUT KEGG CPDS time $time\n";
-print OUTKGC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tschebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
+print OUTKGC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tchebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
 foreach my $cpd (sort(keys %CMPD_ALTS)){
 	$form=''; $char=''; $mass=''; $name='';
 	$keggcpd='';   $chebcpd='';   $hmdbcpd='';
@@ -304,61 +300,81 @@ print OUTKGR "rhea_lcpd\trhea_lloc\trhea_ltrn\trhea_rcpd\trhea_rloc\trhea_rtrn\t
 print OUTKGR "kegg_lcpd\tkegg_lloc\tkegg_ltrn\tkegg_rcpd\tkegg_rloc\tkegg_rtrn\t";
 print OUTKGR "bioc_lcpd\tbioc_lloc\tbioc_ltrn\tbioc_rcpd\tbioc_rloc\tbioc_rtrn\tUP_ID\tEC\n";
 foreach my $rxn (sort(keys %RXN_ALTS)){
-	$rhea_lcpd=''; 	$kegg_lcpd=''; 	$bioc_lcpd='';
-	$rhea_lloc=''; 	$kegg_lloc=''; 	$bioc_lloc='';
-	$rhea_ltrn=''; 	$kegg_ltrn=''; 	$bioc_ltrn='';
-	$rhea_rcpd=''; 	$kegg_rcpd=''; 	$bioc_rcpd='';
-	$rhea_rloc=''; 	$kegg_rloc=''; 	$bioc_rloc='';
-	$rhea_rtrn=''; 	$kegg_rtrn=''; 	$bioc_rtrn='';
-	$rrx='';	$krx='';	$brx='';
-	$dir=$RXN_DIR{$rxn};
-	$sorc=$RXN_ALTS{$rxn}{$rxn};
+       	@rhea_lcpd=();  @kegg_lcpd=();  @bioc_lcpd=();
+        @rhea_lloc=();  @kegg_lloc=();  @bioc_lloc=();
+        @rhea_ltrn=();  @kegg_ltrn=();  @bioc_ltrn=();
+        @rhea_rcpd=();  @kegg_rcpd=();  @bioc_rcpd=();
+        @rhea_rloc=();  @kegg_rloc=();  @bioc_rloc=();
+        @rhea_rtrn=();  @kegg_rtrn=();  @bioc_rtrn=();
 
-       foreach my $cpd (sort{$LRXN_CPD{$cpd}{$a}<=>$LRXN_CPD{$cpd}{$b} || $LRXN_CPD{$cpd}{$a} cmp $LRXN_CPD{$cpd}{$b}} keys %{$LRXN_CPD{$rxn}}){
+        $rhea_lcpd='';  $kegg_lcpd='';  $bioc_lcpd='';
+        $rhea_lloc='';  $kegg_lloc='';  $bioc_lloc='';
+        $rhea_ltrn='';  $kegg_ltrn='';  $bioc_ltrn='';
+        $rhea_rcpd='';  $kegg_rcpd='';  $bioc_rcpd='';
+        $rhea_rloc='';  $kegg_rloc='';  $bioc_rloc='';
+        $rhea_rtrn='';  $kegg_rtrn='';  $bioc_rtrn='';
+        $rrx='';        $krx='';        $brx='';
+        $dir=$RXN_DIR{$rxn};
+        $sorc=$RXN_ALTS{$rxn}{$rxn};
+
+
+        foreach my $cpd (sort(keys %{$LRXN_CPD{$rxn}})){
                 if($cpd !~/\w/){next;}
                 if($TRANS_RXN{$rxn}{$cpd}=~/PORT/){ $tdir=$TRANS_RXN{$rxn}{$cpd};} else{$tdir="NOPORT";} #import/export/biport/noport
                 if( $LRXN_CPD{$rxn}{$cpd}=~/SIDE/){ $tloc=$LRXN_CPD{$rxn}{$cpd};}  else{$tloc="INSIDE";} #inside or outside
-                foreach my $alt (sort{$CMPD_ALTS{$cpd}{$a}<=>$CMPD_ALTS{$cpd}{$b} || $CMPD_ALTS{$cpd}{$a} cmp $CMPD_ALTS{$cpd}{$b}} keys %{$CMPD_ALTS{$cpd}}){
-                           if($alt=~/^C\d+$/){          $kegg_lcpd.=$alt.";"; $kegg_lloc.=$tloc.";"; $kegg_ltrn.=$tdir.";";}
-                        elsif($alt=~/^CHEBI.\d+$/){     $rhea_lcpd.=$alt.";"; $rhea_lloc.=$tloc.";"; $rhea_ltrn.=$tdir.";";}
-                        elsif($alt=~/INCHI\:\w+|HMDB\d+|CID\:\d+/){next;}
-                        else{                           $bioc_lcpd.=$alt.";"; $bioc_lloc.=$tloc.";"; $bioc_ltrn.=$tdir.";";}
+                foreach my $alt (sort(keys %{$CMPD_ALTS{$cpd}})){
+                  #put in a clean namess sub for cpds - also why duplicate compounds? with hash how?
+                        print "rxn $rxn cpd $cpd alt $alt\n";
+                           if($alt=~/^INCHI\:\w+|^HMDB\d+|^CID\:\d+/){next;}
+                        elsif($alt=~/^C\d+$/){          push(@kegg_lcpd,$alt); push(@kegg_lloc,$tloc); push(@kegg_ltrn,$tdir);}
+                        elsif($alt=~/^CHEBI.\d+$/){     push(@rhea_lcpd,$alt); push(@rhea_lloc,$tloc); push(@rhea_ltrn,$tdir);}
+                        else{ $alt=CleanNames($alt);    push(@bioc_lcpd,$alt); push(@bioc_lloc,$tloc); push(@bioc_ltrn,$tdir);}
                 }
         }
-        foreach my $cpd (sort{$RRXN_CPD{$cpd}{$a}<=>$RRXN_CPD{$cpd}{$b} || $RRXN_CPD{$cpd}{$a} cmp $RRXN_CPD{$cpd}{$b}} keys %{$RRXN_CPD{$rxn}}){
+        foreach my $cpd (sort(keys %{$RRXN_CPD{$rxn}})){
                 if($cpd !~/\w/){next;}
-                if($TRANS_RXN{$rxn}{$cpd}=~/PORT/){ $tdir=$TRANS_RXN{$rxn}{$cpd};}  else{$tdir="NOPORT";} #import/export/biport/noport
-                if( $RRXN_CPD{$rxn}{$cpd} =~/SIDE/){ $tloc=$RRXN_CPD{$rxn}{$cpd}; } else{$tloc="INSIDE";} #inside or outside
-                foreach my $alt (sort{$CMPD_ALTS{$cpd}{$a}<=>$CMPD_ALTS{$cpd}{$b} || $CMPD_ALTS{$cpd}{$a} cmp $CMPD_ALTS{$cpd}{$b}} keys %{$CMPD_ALTS{$cpd}}){
-                           if($alt=~/^C\d+$/){          $kegg_rcpd.=$alt.";"; $kegg_rloc.=$tloc.";"; $kegg_rtrn.=$tdir.";";}
-                        elsif($alt=~/^CHEBI.\d+$/){     $rhea_rcpd.=$alt.";"; $rhea_rloc.=$tloc.";"; $rhea_rtrn.=$tdir.";";}
-                        elsif($alt=~/INCHI\:\w+|HMDB\d+|CID\:\d+/){next;}
-                        else{                           $bioc_rcpd.=$alt.";"; $bioc_rloc.=$tloc.";"; $bioc_rtrn.=$tdir.";";}
+                if($TRANS_RXN{$rxn}{$cpd}=~/PORT/){ $tdir=$TRANS_RXN{$rxn}{$cpd};} else{$tdir="NOPORT";} #import/export/biport/noport
+                if( $RRXN_CPD{$rxn}{$cpd}=~/SIDE/){ $tloc=$RRXN_CPD{$rxn}{$cpd}; } else{$tloc="INSIDE";} #inside or outside
+                foreach my $alt (sort(keys %{$CMPD_ALTS{$cpd}})){
+                           if($alt=~/^INCHI\:\w+|^HMDB\d+|^CID\:\d+/){next;}
+                        elsif($alt=~/^C\d+$/){          push(@kegg_rcpd,$alt); push(@kegg_rloc,$tloc); push(@kegg_rtrn,$tdir);}
+                        elsif($alt=~/^CHEBI.\d+$/){     push(@rhea_rcpd,$alt); push(@rhea_rloc,$tloc); push(@rhea_rtrn,$tdir);}
+                        else{ $alt=CleanNames($alt);    push(@bioc_rcpd,$alt); push(@bioc_rloc,$tloc); push(@bioc_rtrn,$tdir);}
+
                 }
         }
 
-       	%ECS=(); %UPIDS=(); @UPIDS=(); $ec=''; $ex='';
+        $rhea_lcpd=join(";",@rhea_lcpd);  $kegg_lcpd=join(";",@kegg_lcpd);  $bioc_lcpd=join(";",@bioc_lcpd);
+        $rhea_lloc=join(";",@rhea_lloc);  $kegg_lloc=join(";",@kegg_lloc);  $bioc_lloc=join(";",@bioc_lloc);
+        $rhea_ltrn=join(";",@rhea_ltrn);  $kegg_ltrn=join(";",@kegg_ltrn);  $bioc_ltrn=join(";",@bioc_ltrn);
+        $rhea_rcpd=join(";",@rhea_rcpd);  $kegg_rcpd=join(";",@kegg_rcpd);  $bioc_rcpd=join(";",@bioc_rcpd);
+        $rhea_rloc=join(";",@rhea_rloc);  $kegg_rloc=join(";",@kegg_rloc);  $bioc_rloc=join(";",@bioc_rloc);
+        $rhea_rtrn=join(";",@rhea_rtrn);  $kegg_rtrn=join(";",@kegg_rtrn);  $bioc_rtrn=join(";",@bioc_rtrn);
+
+        %ECS=(); %UPIDS=(); @UPIDS=(); $ec=''; $ex='';
         foreach my $ec   (keys %{$RXN_EC{$rxn}}){       $ECS{$ec}++;
           foreach my $upid (keys %{$EC2UPID{$ec}}){     $UPIDS{$upid}++;}}
         foreach my $upid (keys %{$RXN_UPID{$rxn}}){     $UPIDS{$upid}++;}
-        foreach my $ex (sort{$ECS{$b}<=>$ECS{$a}} keys %ECS){ if($ex=~/\d/){$ec = $ex; last;} }
+        foreach my $ex (sort(keys %ECS)){ if($ex=~/\d/){$ec = $ex; last;} }
         foreach my $upid (keys %UPIDS){ push(@UPIDS,$upid); }
         @UPIDS=nsort(@UPIDS);
         $upid=join(";",@UPIDS);
 
-	foreach my $alt (sort(keys %{$RXN_ALTS{$rxn}})){
-		   if($alt =~ /^\d+$/){ $rrx.=$alt.";"; }
-		elsif($alt =~ /^R\d+$/){$krx.=$alt.";"; }
-		elsif($alt =~ /RXN/){	$brx.=$alt.";"; }
-		else{}
-	}
-	$one="$rxn\t$sorc\t$dir\t$rrx\t$krx\t$brx\t";
-	$two="$rhea_lcpd\t$rhea_lloc\t$rhea_ltrn\t$rhea_rcpd\t$rhea_rloc\t$rhea_rtrn\t";
-	$thr="$kegg_lcpd\t$kegg_lloc\t$kegg_ltrn\t$kegg_rcpd\t$kegg_rloc\t$kegg_rtrn\t";
-	$for="$bioc_lcpd\t$bioc_lloc\t$bioc_ltrn\t$bioc_rcpd\t$bioc_rloc\t$bioc_rtrn\t$upid\t$ec";
-	$out="$one$two$thr$for";
-	$out=~s/\;+\t/\t/g;
-	$out=~s/\;+$//g;
+        foreach my $alt (sort(keys %{$RXN_ALTS{$rxn}})){
+                   if($alt =~ /^\d+$/){ $rrx.=$alt.";"; }
+                elsif($alt =~ /^R\d+$/){$krx.=$alt.";"; }
+                elsif($alt =~ /RXN/){   $brx.=$alt.";"; }
+                else{}
+        }
+        $one="$rxn\t$sorc\t$dir\t$rrx\t$krx\t$brx\t";
+        $two="$rhea_lcpd\t$rhea_lloc\t$rhea_ltrn\t$rhea_rcpd\t$rhea_rloc\t$rhea_rtrn\t";
+        $thr="$kegg_lcpd\t$kegg_lloc\t$kegg_ltrn\t$kegg_rcpd\t$kegg_rloc\t$kegg_rtrn\t";
+        $for="$bioc_lcpd\t$bioc_lloc\t$bioc_ltrn\t$bioc_rcpd\t$bioc_rloc\t$bioc_rtrn\t$upid\t$ec";
+        $out="$one$two$thr$for";
+        $out=~s/\;+\t/\t/g;
+        $out=~s/\;+$//g;
+
+
 	print OUTKGR "$out\n";
 }
 undef(%CMPD_ALTS); undef(%CMPD_CHAR); undef(%CMPD_FORM); undef(%CMPD_MASS); undef(%CMPD_NAME); 
@@ -411,42 +427,44 @@ die;
 
 
 #FIX LOWQUAL CPD NAMES
-sub CleanName{
-	$nameX = $_[0];
+sub CleanNames{
+@GREEKS = ("α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","ς","σ","τ","υ","φ","χ","ψ","ω");
+@GREEKL = ("ALPHA","BETA","GAMMA","DELTA","EPSILON","ZETA","ETA","THETA","IOTA","KAPPA","LAMBDA","MU","NU","XI","OMICRON","PI","RHO","SIGMA","SIGMA","TAU","UPSILON","PHI","CHI","PSI","OMEGA");
+        $nameX = $_[0];
         #remove junk punctuation/standardize
-	$sta=0; $end=1;
-	while($end ne $sta){
-		$sta=$nameX;
-		#swap greek symbols for text
-		for my $g (0..$#GREEKL){ 	#fix pathbank and other greek symbols
-			if($nameX =~/($GREEKS[$g])/){ 
-				$nameX =~ s/$GREEKS[$g]/$GREEKL[$g]/g; 
-		}	}
-		$nameX =~ s/\%2B(\d*)/$1\+/g; 	#fix html +/- code (HMDB db)
-		$nameX =~ s/\%2D(\d*)/$1\-/g; 	#fix html +/- code (HMDB db)
-		
-	        $nameX =~ s/\s+/_/g;
-	        $nameX =~ s/[^\w\-\+]+/_/g;
-		$nameX =~ s/\_\+|\+\_/\+/g;
-		$nameX =~ s/\_\-|\-\_/\-/g;
-		$nameX =~ s/\-+/\-/g;
-		$nameX =~ s/\++/\+/g;
-		$nameX =~ s/\++\-+|\-+\++/\+/g;
-	        $nameX =~ s/\_+/\_/g;
-	        $nameX =~ s/(^[\_\W]+|[\_\W]+$)//g;
+        $sta=0; $end=1;
+        while($end ne $sta){
+                $sta=$nameX;
+                #swap greek symbols for text
+                for my $g (0..$#GREEKL){ #fix pathbank and other greek symbols
+                        if($nameX =~/($GREEKS[$g])/){
+                                $nameX =~ s/$GREEKS[$g]/$GREEKL[$g]/g;
+                }       }
+                $nameX =~ s/\%2B(\d*)/$1\+/g;   #fix html +/- code (HMDB db)
+                $nameX =~ s/\%2D(\d*)/$1\-/g;   #fix html +/- code (HMDB db)
+                $nameX =~ s/(ARROW|STEREO|RIGHT|LEFT|\-)*\&/\&/g; #fix html +/- code (rhea)
+                $nameX =~ s/\&\w+\;\/*//g; #fix html +/- code (rhea)
 
-		#clear out junk descriptors
-	        $nameX =~ s/^(LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)//g;
-	        $nameX =~ s/^(UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)//g;
-	        $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)[\b\_]/\_/g;
-	        $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)[\b\_]/\_/g;
-	        $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)$//g;
-	        $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)$//g;
+                $nameX =~ s/\s+/_/g;
+                $nameX =~ s/[^\w\-\+]+/_/g;
+                $nameX =~ s/\_\+|\+\_/\+/g;
+                $nameX =~ s/\_\-|\-\_/\-/g;
+                $nameX =~ s/\-+/\-/g;
+                $nameX =~ s/\++/\+/g;
+                $nameX =~ s/\++\-+|\-+\++/\+/g;
+                $nameX =~ s/\_+/\_/g;
+                $nameX =~ s/(^[\_\W]+|[\_\W]+$)//g;
 
-		$end=$nameX;
-	}
-        return($nameX);
-}
+                #clear out junk descriptors
+                $nameX =~ s/^(LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|UNCHARACTERIZED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)//g;
+                $nameX =~ s/^(UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)//g;
+                $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|UNCHARACTERIZED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)[\b\_]/\_/g;
+                $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)[\b\_]/\_/g;
+                $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|UNCHARACTERIZED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)$//g;
+                $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)$//g;
+                $end=$nameX;
+        }
+return($nameX);}
 
 
 #REDUCE NUMBER OF ALT NAMES, PICK BEST
@@ -457,7 +475,7 @@ sub BestName{
 	#GET LONGEST LETTER STRETCH, GET NON_WORD COUNTS
 	%ODD=(); %LEN=(); 
 	foreach my $name (@NM){
-		$name=CleanName($name);
+		$name=CleanNames($name);
 		$alt=$name;
 		$alt=~s/[\W\_]+/\_/g;
 		#get rid of runs of numbers

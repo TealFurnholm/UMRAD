@@ -178,7 +178,7 @@ while(<INPBANK>){
 	while($line=~/\,\"\"\,/){$line=~s/\,\"\"\,/\,\,/;}
 
 	#get formula before changing cell formatting
-	$form1=''; if($line =~ /INCHI.[^\/]+\/([^\/]+)\//){ $form1=$1; $form1=~s/\W+/\_/g; $form1=CleanName($form1); }
+	$form1=''; if($line =~ /INCHI.[^\/]+\/([^\/]+)\//){ $form1=$1; $form1=~s/\W+/\_/g; $form1=CleanNames($form1); }
 
 	#fix commas and non-word from cell values
 	while($line=~/(\"[^\"]+\")/){ 
@@ -195,10 +195,10 @@ while(<INPBANK>){
 	@LINES=();	
 	@LINES = split(",", $line);
 	if($#LINES !=10 || $LINES[0]=~/ELECTRON/){next;} #electron containing - all have wrong collumn numbers
-	$name=''; if($LINES[0]=~/\w/){		  $name=$LINES[0]; $name=CleanName($name);}
+	$name=''; if($LINES[0]=~/\w/){		  $name=$LINES[0]; $name=CleanNames($name);}
 	$form=''; if($LINES[6]=~/\w/){
 			$form2=$LINES[6]; 
-			$form2=CleanName($form2);
+			$form2=CleanNames($form2);
 			if($form !~ /\w/){$form=$form2;}
 			if($form1 =~/\w/ && $form !~ /\w/){$form=$form1;}
 		  }
@@ -227,7 +227,7 @@ while(<INPBANK>){
 #OUTPUT PATHBANK - DO NOT MIX THIS OUTPUT SCRIPT PIECE WITH THE OTHERS
 $time=localtime;
 print "OUTPUT pathbank_all_metabolites.csv time $time\n";
-print OUTPBC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tschebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
+print OUTPBC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tchebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
 foreach my $cpd (sort(keys %CMPD_ALTS)){
 	$fe=''; $fa=''; $form=''; $char=''; $mass=''; $name=''; $dupl=0;
 	$keggcpd='';   $chebcpd='';   $hmdbcpd='';
@@ -361,9 +361,9 @@ while(<INHMDB>){
 			      if($_=~/\<pubchem.compound.id\>(\d+)/i){ 	$alt="CID:".$1; 					$ALTS{$alt}=1; 	next;}
 				         if($_=~/\<chebi.id\>(\d+)/i){ 	$alt="CHEBI:".$1;					$ALTS{$alt}=1; 	next;}
 	                              if($_=~/\<biocyc.id\>(.+?)\</i){ 	$alt=$1; 	  					$ALTS{$alt}=1; 	next;}
-				    if($_=~/^\s{2}\<name\>([^\<]+)/i){ 	$name=$1; $name=CleanName($name);			$NA{$name}=1;	next;}
-				 if($_=~/^\s{4}\<synonym\>([^\<]+)/i){ 	$name=$1; $name=CleanName($name);			$NA{$name}=1;   next;}
-			       if($_=~/\<chemical.formula\>(.+?)\</i){ 	$form=$1; $form=CleanName($form); 					next;}
+				    if($_=~/^\s{2}\<name\>([^\<]+)/i){ 	$name=$1; $name=CleanNames($name);			$NA{$name}=1;	next;}
+				 if($_=~/^\s{4}\<synonym\>([^\<]+)/i){ 	$name=$1; $name=CleanNames($name);			$NA{$name}=1;   next;}
+			       if($_=~/\<chemical.formula\>(.+?)\</i){ 	$form=$1; $form=CleanNames($form); 					next;}
 	             if($_=~/\<average.molecular.weight\>([\d\.]+)/i){ 	$mass=$1;								next;}
 		            if($_=~/\<kind\>physiological.charge\</i){ 	$inchrg=1; 								next;}
 		      if($inchrg==1 && $_=~/\<value\>([\+\-]*)(\d+)/i){ $inchrg=0; $s=''; $s=$1;$n=''; $n=$2; $char=''; 
@@ -391,7 +391,7 @@ while(<INHMDB>){
 #OUTPUT
 $time=localtime;
 print "OUTPUT hmdb_metabolites.xml time $time\n";
-print OUTHMC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tschebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
+print OUTHMC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tchebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
 foreach my $cpd (sort(keys %CMPD_ALTS)){
 	$fe=''; $fa=''; $form=''; $char=''; $mass=''; $name='';
 	$keggcpd='';   $chebcpd='';   $hmdbcpd='';
@@ -533,7 +533,7 @@ while(<INPUBMASS>){
 	(my $cid, my $form, my $mass, my $junk)=split("\t",$_); 
 	if($cid!~/^\d+$/){next;}
 	$cid="CID:".$cid;
-	if($form=~/\w/){$CMPD_FORM{$cid}=CleanName($form);;} 
+	if($form=~/\w/){$CMPD_FORM{$cid}=CleanNames($form);;} 
 	if($mass=~/\d/){$CMPD_MASS{$cid}=$mass;}
 }
 
@@ -548,7 +548,7 @@ while(<INPUBSYN>){
 	if($bid=~/^CHEBI\:\d+$/){ $CMPD_ALTS{$cid}{$bid}="PC"; $CMPD_ALTS{$cid}{$cid}="PC"; next;}
 	if($bid=~/^C\d{5}$/){ 	  $CMPD_ALTS{$cid}{$bid}="PC"; $CMPD_ALTS{$cid}{$cid}="PC"; next;}
 	$xid="INCHI:".$bid; if(exists($CMPD_ALTS{$cid}{$xid})){next;} #get rid of inchikey from names
-	if($bid=~/[A-Z]{8}/){ $name=CleanName($bid); $CMPD_NAME{$cid}{$name}="PC";}
+	if($bid=~/[A-Z]{8}/){ $name=CleanNames($bid); $CMPD_NAME{$cid}{$name}="PC";}
 
 }
 foreach my $cid (sort(keys %CMPD_NAME)){
@@ -563,7 +563,7 @@ foreach my $cid (sort(keys %CMPD_NAME)){
 #OUTPUT PUBCHEM CPDS
 $time=localtime;
 print "OUTPUT PubChem time $time\n";
-print OUTPCC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tschebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
+print OUTPCC "cpd\tformula\tmass\tcharge\tdb_src\ttcdbs\tnames\tkeggcpd\tchebcpd\thmdbcpd\tpubccpd\tinchcpd\tbioccpd\n";
 foreach my $cpd (sort(keys %CMPD_ALTS)){
 	$fe=''; $fa=''; $form=''; $char=''; $mass=''; $name='';
 	$keggcpd='';   $chebcpd='';   $hmdbcpd='';
@@ -659,40 +659,43 @@ die;
 
 
 #FIX LOWQUAL CPD NAMES
-sub CleanName{
-	$nameX = $_[0];
+sub CleanNames{
+@GREEKS = ("α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","ς","σ","τ","υ","φ","χ","ψ","ω");
+@GREEKL = ("ALPHA","BETA","GAMMA","DELTA","EPSILON","ZETA","ETA","THETA","IOTA","KAPPA","LAMBDA","MU","NU","XI","OMICRON","PI","RHO","SIGMA","SIGMA","TAU","UPSILON","PHI","CHI","PSI","OMEGA");
+        $nameX = $_[0];
         #remove junk punctuation/standardize
-	$sta=0; $end=1;
-	while($end ne $sta){
-		$sta=$nameX;
-		#swap greek symbols for text
-		for my $g (0..$#GREEKL){ 	#fix pathbank and other greek symbols
-			if($nameX =~/($GREEKS[$g])/){ 
-				$nameX =~ s/$GREEKS[$g]/$GREEKL[$g]/g; 
-		}	}
-		$nameX =~ s/\%2B(\d*)/$1\+/g; 	#fix html +/- code (HMDB db)
-		$nameX =~ s/\%2D(\d*)/$1\-/g; 	#fix html +/- code (HMDB db)
-		
-	        $nameX =~ s/\s+/_/g;
-	        $nameX =~ s/[^\w\-\+]+/_/g;
-		$nameX =~ s/\_\+|\+\_/\+/g;
-		$nameX =~ s/\_\-|\-\_/\-/g;
-		$nameX =~ s/\-+/\-/g;
-		$nameX =~ s/\++/\+/g;
-		$nameX =~ s/\++\-+|\-+\++/\+/g;
-	        $nameX =~ s/\_+/\_/g;
-	        $nameX =~ s/(^[\_\W]+|[\_\W]+$)//g;
+        $sta=0; $end=1;
+        while($end ne $sta){
+                $sta=$nameX;
+                #swap greek symbols for text
+                for my $g (0..$#GREEKL){ #fix pathbank and other greek symbols
+                        if($nameX =~/($GREEKS[$g])/){
+                                $nameX =~ s/$GREEKS[$g]/$GREEKL[$g]/g;
+                }       }
+                $nameX =~ s/\%2B(\d*)/$1\+/g;   #fix html +/- code (HMDB db)
+                $nameX =~ s/\%2D(\d*)/$1\-/g;   #fix html +/- code (HMDB db)
+                $nameX =~ s/(ARROW|STEREO|RIGHT|LEFT|\-)*\&/\&/g; #fix html +/- code (rhea)
+                $nameX =~ s/\&\w+\;\/*//g; #fix html +/- code (rhea)
 
-		#clear out junk descriptors
-	        $nameX =~ s/^(LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)//g;
-	        $nameX =~ s/^(UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)//g;
-	        $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)[\b\_]/\_/g;
-	        $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)[\b\_]/\_/g;
-	        $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)$//g;
-	        $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)$//g;
+                $nameX =~ s/\s+/_/g;
+                $nameX =~ s/[^\w\-\+]+/_/g;
+                $nameX =~ s/\_\+|\+\_/\+/g;
+                $nameX =~ s/\_\-|\-\_/\-/g;
+                $nameX =~ s/\-+/\-/g;
+                $nameX =~ s/\++/\+/g;
+                $nameX =~ s/\++\-+|\-+\++/\+/g;
+                $nameX =~ s/\_+/\_/g;
+                $nameX =~ s/(^[\_\W]+|[\_\W]+$)//g;
 
-		$end=$nameX;
-	}
+                #clear out junk descriptors
+                $nameX =~ s/^(LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|UNCHARACTERIZED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)//g;
+                $nameX =~ s/^(UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)//g;
+                $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|UNCHARACTERIZED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)[\b\_]/\_/g;
+                $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)[\b\_]/\_/g;
+                $nameX =~ s/[\b\_](LIKE|CANDIDATUS|CANDIDATUAS|VOUCHERED|UNCHARACTERIZED|ASSOCIATED|CONTAMINATION|U*N*SCREENED|COMBINED|PUTATIVE)$//g;
+                $nameX =~ s/[\b\_](UNDESCRIBED|UNKNOWN|UNCULTIVATED|UNCULTURED|UNIDENTIFIED|UNCLASSIFIED|UNASSIGNED)$//g;
+                $end=$nameX;
+        }
         return($nameX);
 }
 
@@ -705,7 +708,7 @@ sub BestName{
 	#GET LONGEST LETTER STRETCH, GET NON_WORD COUNTS
 	%ODD=(); %LEN=(); 
 	foreach my $name (@NM){
-		$name=CleanName($name);
+		$name=CleanNames($name);
 		$alt=$name;
 		$alt=~s/[\W\_]+/\_/g;
 		#get rid of runs of numbers
